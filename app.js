@@ -53,6 +53,7 @@ const userSchema = new mongoose.Schema({
   email: String,
   password: String,
   googleId: String,
+  secret: String,
 });
 //encryption
 // const secret = "this is secret";
@@ -124,12 +125,49 @@ app.get("/login", function (req, res) {
 app.get("/register", function (req, res) {
   res.render("register");
 });
+
 app.get("/secrets", function (req, res) {
+  User.find({ secret: { $ne: null } }, function (err, foundUsers) {
+    if (err) {
+      console.log(err);
+    } else {
+      if (foundUsers) {
+        res.render("secrets", { usersWithSecrets: foundUsers });
+      }
+    }
+  });
+  //look thtough all users in our data collection
+  //look for secrets field, pick out the secret filed is not equal to null
+});
+
+app.get("/submit", function (req, res) {
+  //check if the user is logged in
   if (req.isAuthenticated()) {
-    res.render("secrets");
+    res.render("submit");
   } else {
     res.redirect("/login");
   }
+});
+//CANNOT POST / submit use app.post
+app.post("/submit", function (req, res) {
+  //save the screct that the user typed in
+  const submittedSecret = req.body.secret; // name ="secrect" in submit.ejs
+
+  console.log(req.user.id); // add secret they submitted to secret field that i created in schema
+
+  User.findById(req.user.id, function (err, foundUser) {
+    if (err) {
+      console.log(err);
+    } else {
+      if (foundUser) {
+        // if foundUser did exist
+        foundUser.secret = submittedSecret; // set foundUser's secret field to submittedScrect
+        foundUser.save(function () {
+          res.redirect("/secrets");
+        });
+      }
+    }
+  });
 });
 
 app.get("/logout", function (req, res) {
